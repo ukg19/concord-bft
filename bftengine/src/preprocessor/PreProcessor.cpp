@@ -96,7 +96,8 @@ PreProcessor::PreProcessor(shared_ptr<MsgsCommunicator> &msgsCommunicator,
                            metricsComponent_.RegisterCounter("preProcReqForwardedByNonPrimaryNotIgnored"),
                            metricsComponent_.RegisterGauge("PreProcInFlyRequestsNum", 0)},
       preExecReqStatusCheckPeriodMilli_(myReplica_.getReplicaConfig().preExecReqStatusCheckTimerMillisec),
-      timers_{timers} {
+      timers_{timers},
+      preExecuteDuration_{histograms_.preExecutionTotal} {
   registerMsgHandlers();
   metricsComponent_.Register();
   sigManager_ = make_shared<SigManager>(myReplicaId_,
@@ -221,6 +222,7 @@ void PreProcessor::updateAggregatorAndDumpMetrics() {
   auto currTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch());
   if (currTime - metricsLastDumpTime_ >= metricsDumpIntervalInSec_) {
     metricsLastDumpTime_ = currTime;
+    preExecuteDuration_.clear();
     LOG_INFO(logger(), "--preProcessor metrics dump--" + metricsComponent_.ToJson());
   }
 }
@@ -467,7 +469,8 @@ void PreProcessor::cancelPreProcessing(NodeIdType clientId) {
     lock_guard<mutex> lock(clientEntry->mutex);
     if (clientEntry->reqProcessingStatePtr) {
       reqSeqNum = clientEntry->reqProcessingStatePtr->getReqSeqNum();
-      SCOPED_MDC_CID(clientEntry->reqProcessingStatePtr->getReqCid());
+      auto const &cid = clientEntry->reqProcessingStatePtr->getReqCid();
+      SCOPED_MDC_CID(cid);
       releaseClientPreProcessRequest(clientEntry, clientId, CANCEL);
       LOG_WARN(logger(), "Pre-processing consensus not reached - cancel request" << KVLOG(reqSeqNum, clientId));
     }
@@ -498,6 +501,7 @@ void PreProcessor::finalizePreProcessing(NodeIdType clientId) {
       preProcessorMetrics_.preProcReqSentForFurtherProcessing.Get().Inc();
       releaseClientPreProcessRequest(clientEntry, clientId, COMPLETE);
       LOG_INFO(logger(), "Pre-processing completed for" << KVLOG(cid, reqSeqNum, clientId));
+      if (myReplica_.isCurrentPrimary()) preExecuteDuration_.end(cid);
     }
   }
 }
@@ -614,6 +618,7 @@ void PreProcessor::handleClientPreProcessRequestByPrimary(PreProcessRequestMsgSh
   const auto &reqSeqNum = preProcessRequestMsg->reqSeqNum();
   const auto &clientId = preProcessRequestMsg->clientId();
   const auto &senderId = preProcessRequestMsg->senderId();
+  preExecuteDuration_.start(preProcessRequestMsg->getCid());
   LOG_INFO(logger(),
            "Start request processing by a primary replica"
                << KVLOG(reqSeqNum, preProcessRequestMsg->getCid(), clientId, senderId));

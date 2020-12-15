@@ -180,6 +180,7 @@ class PreProcessor {
   const uint64_t preExecReqStatusCheckPeriodMilli_;
   concordUtil::Timers &timers_;
   PreProcessorRecorder histograms_;
+  concord::diagnostics::AsyncTimeRecorderMap<std::string> preExecuteDuration_;
 };
 
 //**************** Class AsyncPreProcessJob ****************//
