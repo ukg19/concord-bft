@@ -18,12 +18,9 @@
 
 namespace preprocessor {
 
-typedef enum { REQ_TYPE_PRE_PROCESS, REQ_TYPE_CANCEL } RequestType;
-
 class PreProcessRequestMsg : public MessageBase {
  public:
-  PreProcessRequestMsg(RequestType reqType,
-                       NodeIdType senderId,
+  PreProcessRequestMsg(NodeIdType senderId,
                        uint16_t clientId,
                        uint16_t reqOffsetInBatch,
                        uint64_t reqSeqNum,
@@ -37,7 +34,6 @@ class PreProcessRequestMsg : public MessageBase {
 
   void validate(const bftEngine::impl::ReplicasInfo&) const override;
   char* requestBuf() const { return body() + sizeof(Header) + spanContextSize(); }
-  const RequestType reqType() const { return msgBody()->reqType; }
   const uint32_t requestLength() const { return msgBody()->requestLength; }
   const uint16_t clientId() const { return msgBody()->clientId; }
   const uint16_t reqOffsetInBatch() const { return msgBody()->reqOffsetInBatch; }
@@ -51,7 +47,6 @@ class PreProcessRequestMsg : public MessageBase {
 #pragma pack(push, 1)
   struct Header {
     MessageBase::Header header;
-    RequestType reqType;
     SeqNum reqSeqNum;
     uint16_t clientId;
     uint16_t reqOffsetInBatch;
@@ -67,8 +62,7 @@ class PreProcessRequestMsg : public MessageBase {
     static logging::Logger logger_ = logging::getLogger("concord.preprocessor");
     return logger_;
   }
-  void setParams(RequestType reqType,
-                 NodeIdType senderId,
+  void setParams(NodeIdType senderId,
                  uint16_t clientId,
                  uint16_t reqOffsetInBatch,
                  ReqId reqSeqNum,
