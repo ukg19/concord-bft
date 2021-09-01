@@ -1,7 +1,5 @@
 name: asan
-on:
-  schedule:
-    - cron: '0 0 * * 6'
+on: [push]
 
 jobs:
   build:
