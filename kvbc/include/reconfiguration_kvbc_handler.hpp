@@ -32,9 +32,9 @@ class ReconfigurationBlockTools {
                                             bool include_wedge);
   kvbc::BlockId persistReconfigurationBlock(concord::kvbc::categorization::VersionedUpdates& ver_updates,
                                             const uint64_t bft_seq_num,
-                                            const std::optional<bftEngine::Timestamp>&,
+                                            const std::optional<bftEngine::Timestamp>& timestamp,
                                             bool include_wedge);
-  kvbc::BlockId persistNewEpochBlock(const uint64_t bft_seq_num);
+  kvbc::BlockId persistNewEpochBlock(const uint64_t bft_seq_num, const std::optional<bftEngine::Timestamp>& timestamp);
 
   kvbc::IBlockAdder& blocks_adder_;
   BlockMetadata block_metadata_;

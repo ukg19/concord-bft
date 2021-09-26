@@ -65,6 +65,15 @@ kvbc::BlockId ReconfigurationBlockTools::persistReconfigurationBlock(
     ver_updates.addUpdate(std::string{keyTypes::reconfiguration_wedge_key},
                           std::string(wedge_buf.begin(), wedge_buf.end()));
   }
+  if (timestamp) {
+    concord::messages::Timestamp cmf_ts;
+    cmf_ts.time_since_epoch = timestamp->time_since_epoch.count();
+    cmf_ts.request_position = timestamp->request_position;
+    std::vector<uint8_t> serialized_ts;
+    concord::messages::serialize(serialized_ts, cmf_ts);
+    ver_updates.addUpdate(std::string{keyTypes::timestamp_key},
+                          std::string(serialized_ts.begin(), serialized_ts.end()));
+  }
   concord::kvbc::categorization::Updates updates;
   updates.add(concord::kvbc::categorization::kConcordReconfigurationCategoryId, std::move(ver_updates));
   concord::kvbc::categorization::VersionedUpdates sn_updates;
@@ -79,12 +88,13 @@ kvbc::BlockId ReconfigurationBlockTools::persistReconfigurationBlock(
   }
 }
 
-kvbc::BlockId ReconfigurationBlockTools::persistNewEpochBlock(const uint64_t bft_seq_num) {
+kvbc::BlockId ReconfigurationBlockTools::persistNewEpochBlock(const uint64_t bft_seq_num,
+                                                              const std::optional<bftEngine::Timestamp>& timestamp) {
   auto newEpoch = bftEngine::EpochManager::instance().getSelfEpochNumber() + 1;
   concord::kvbc::categorization::VersionedUpdates ver_updates;
   ver_updates.addUpdate(std::string{kvbc::keyTypes::reconfiguration_epoch_key},
                         concordUtils::toBigEndianStringBuffer(newEpoch));
-  auto block_id = persistReconfigurationBlock(ver_updates, bft_seq_num, std::nullopt, false);
+  auto block_id = persistReconfigurationBlock(ver_updates, bft_seq_num, timestamp, false);
   bftEngine::EpochManager::instance().setSelfEpochNumber(newEpoch);
   bftEngine::EpochManager::instance().setGlobalEpochNumber(newEpoch);
   LOG_INFO(GL, "Starting new epoch " << KVLOG(newEpoch, block_id));
@@ -679,7 +689,7 @@ bool ReconfigurationHandler::handle(const messages::UnwedgeCommand& cmd,
   bool can_unwedge = (valid_sigs >= quorum_size);
   if (can_unwedge) {
     if (!cmd.restart) {
-      persistNewEpochBlock(bft_seq_num);
+      persistNewEpochBlock(bft_seq_num, ts);
       bftEngine::ControlStateManager::instance().setStopAtNextCheckpoint(0);
       bftEngine::IControlHandler::instance()->resetState();
       LOG_INFO(getLogger(), "Unwedge command completed successfully");
