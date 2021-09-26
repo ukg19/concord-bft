@@ -19,6 +19,7 @@
 #include "Replica.hpp"
 #include "kvstream.h"
 #include "communication/CommStateControl.hpp"
+#include "TimeService.hpp"
 
 using namespace concord::messages;
 namespace concord::reconfiguration {

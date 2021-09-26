@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <optional>
 #include "concord.cmf.hpp"
 #include "OpenTracing.hpp"
 #include "kv_types.hpp"
