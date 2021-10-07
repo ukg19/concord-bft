@@ -94,7 +94,8 @@ bool StReconfigurationHandler::handleStoredCommand(const std::string &key, uint6
     T cmd;
     deserializeCmfMessage(cmd, strval);
     std::optional<bftEngine::Timestamp> timestamp = std::nullopt;
-    auto value = ro_storage_.get(kvbc::kConcordInternalCategoryId, std::string{kvbc::keyTypes::timestamp_key}, blockid);
+    auto value = ro_storage_.get(
+        concord::kvbc::categorization::kConcordInternalCategoryId, std::string{kvbc::keyTypes::timestamp_key}, blockid);
     if (value) {
       const auto &data = std::get<categorization::VersionedValue>(*value).data;
       concord::messages::Timestamp cmf_ts;

@@ -20,7 +20,6 @@
 #include "kvstream.h"
 #include "communication/StateControl.hpp"
 #include "secrets_manager_plain.h"
-#include "communication/CommStateControl.hpp"
 #include "TimeService.hpp"
 
 using namespace concord::messages;
