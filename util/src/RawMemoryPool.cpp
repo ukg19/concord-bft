@@ -83,7 +83,7 @@ char* RawMemoryPool::allocateChunk() {
   if (numOfAllocatedChunks_ < maxChunksNum_) {
     chunk = new char[chunkSize_];
     increaseNumOfAllocatedChunks();
-    increaseNumOfAvailableChunks();
+    // increaseNumOfAvailableChunks();
   }
   if (chunk)
     LOG_DEBUG(logger(),
